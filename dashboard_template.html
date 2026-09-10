@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Early Warning Console — AI Network Attack Forecasting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0A121F;
+    --bg-panel:#101A2B;
+    --bg-panel-alt:#0C1522;
+
+    --border:#1E2C40;
+    --border-soft:#182335;
+    --text-primary:#E8EEF6;
+    --text-muted:#7C90A8;
+    --text-dim:#4E6079;
+    --cyan:#2FD4C0;
+    --cyan-dim:#1B8577;
+    --amber:#F2A93B;
+    --red:#EF5350;
+    --blue:#5B8DEF;
+    --violet:#9B8CF2;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(91,141,239,0.10), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(47,212,192,0.08), transparent 55%),
+      var(--bg-deep);
+    color:var(--text-primary);
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .wrap{max-width:1280px;margin:0 auto;padding:28px 24px 60px;}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    gap:24px;flex-wrap:wrap;
+    padding-bottom:22px;margin-bottom:24px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .brand{display:flex;gap:14px;align-items:flex-start;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:9px;flex:none;margin-top:2px;
+    background:linear-gradient(150deg, var(--cyan), var(--blue));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.06), 0 8px 24px rgba(47,212,192,0.18);
+  }
+  .brand-mark svg{width:20px;height:20px;}
+  h1{font-size:1.5rem;font-weight:700;margin:0 0 4px;letter-spacing:-0.01em;}
+  .subtitle{color:var(--text-muted);font-size:0.92rem;margin:0;max-width:46ch;line-height:1.5;}
+  .header-meta{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:6px 12px;border-radius:100px;
+    font-size:0.74rem;font-weight:600;letter-spacing:0.02em;
+    background:rgba(47,212,192,0.08);border:1px solid rgba(47,212,192,0.28);color:var(--cyan);
+  }
+  .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .meta-line{color:var(--text-dim);font-size:0.78rem;}
+
+  /* ---------- hero risk timeline ---------- */
+  .hero{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:22px 22px 14px;
+    margin-bottom:20px;
+  }
+  .hero-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
+  .hero-title{font-size:0.98rem;font-weight:600;}
+  .hero-sub{color:var(--text-muted);font-size:0.8rem;margin-top:2px;}
+  .legend-toggles{display:flex;gap:8px;flex-wrap:wrap;}
+  .toggle{
+    display:flex;align-items:center;gap:7px;
+    padding:5px 11px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg-panel-alt);color:var(--text-muted);
+    font-size:0.74rem;font-weight:500;cursor:pointer;user-select:none;
+    transition:border-color .15s, color .15s;
+  }
+  .toggle.active{color:var(--text-primary);border-color:var(--swatch,var(--cyan));}
+  .toggle .sw{width:9px;height:9px;border-radius:2px;background:var(--swatch,var(--cyan));}
+  .chart-box{position:relative;height:300px;margin-top:10px;}
+  .chart-box canvas, .decomp-box canvas{display:block;width:100%;height:100%;}
+  .reset-btn{
+    font-size:0.72rem;color:var(--text-dim);background:none;border:1px solid var(--border);
+    padding:5px 10px;border-radius:8px;cursor:pointer;font-family:'IBM Plex Mono',monospace;
+  }
+  .reset-btn:hover{color:var(--text-primary);border-color:var(--text-dim);}
+
+  /* ---------- metric strip ---------- */
+  .metrics{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;
+  }
+  .metric-card{
+    background:var(--bg-panel);border:1px solid var(--border);border-radius:14px;
+    padding:16px 18px;
+  }
+  .metric-label{font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;}
+  .metric-value{font-family:'IBM Plex Mono',monospace;font-size:1.65rem;font-weight:600;line-height:1;}
+  .metric-value .unit{font-size:0.95rem;color:var(--text-muted);font-weight:500;margin-left:2px;}
+  .metric-foot{font-size:0.72rem;color:var(--text-dim);margin-top:6px;}
+  .m-cyan{color:var(--cyan);} .m-amber{color:var(--amber);} .m-blue{color:var(--blue);} .m-red{color:var(--red);} .m-violet{color:var(--violet);}
+
+  /* ---------- two column ---------- */
+  .cols{display:grid;grid-template-columns:1fr 1.15fr;gap:18px;align-items:start;margin-bottom:20px;}
+  .panel{
+    background:var(--bg-panel);border:1px solid var(--border);border-radius:16px;padding:20px 20px 18px;
+  }
+  .panel h2{font-size:0.92rem;margin:0 0 4px;font-weight:600;}
+  .panel .p-sub{color:var(--text-muted);font-size:0.78rem;margin:0 0 16px;}
+
+  .feat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .feat-name{width:132px;flex:none;font-size:0.74rem;color:var(--text-muted);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .feat-bar-bg{flex:1;height:8px;background:var(--bg-panel-alt);border-radius:6px;overflow:hidden;}
+  .feat-bar{height:100%;background:linear-gradient(90deg, var(--blue), var(--cyan));border-radius:6px;}
+  .feat-val{width:44px;flex:none;text-align:right;font-size:0.74rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+
+  .decomp-box{height:150px;margin-top:14px;}
+
+  .incident-list{max-height:520px;overflow-y:auto;padding-right:4px;}
+  .incident-row{
+    display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;
+    padding:11px 10px;border-radius:10px;cursor:pointer;
+    border:1px solid transparent;
+  }
+  .incident-row:hover{background:var(--bg-panel-alt);border-color:var(--border);}
+  .incident-row.focused{background:rgba(47,212,192,0.07);border-color:rgba(47,212,192,0.35);}
+  .inc-idx{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--text-dim);}
+  .inc-main .inc-kind{font-size:0.84rem;font-weight:600;}
+  .inc-main .inc-time{font-size:0.72rem;color:var(--text-muted);margin-top:2px;font-family:'IBM Plex Mono',monospace;}
+  .inc-lead{text-align:right;}
+  .inc-lead .val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:0.9rem;color:var(--cyan);}
+  .inc-lead .lbl{font-size:0.66rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.03em;}
+  .badge-kind{
+    display:inline-block;font-size:0.62rem;padding:2px 7px;border-radius:5px;margin-top:4px;
+    text-transform:uppercase;letter-spacing:0.03em;font-weight:600;
+  }
+  .badge-portscan_ddos{background:rgba(239,83,80,0.12);color:var(--red);}
+  .badge-credential_stuffing{background:rgba(242,169,59,0.14);color:var(--amber);}
+  .badge-exfil{background:rgba(155,140,242,0.14);color:var(--violet);}
+
+  /* ---------- pipeline strip ---------- */
+  .pipeline{
+    background:var(--bg-panel);border:1px solid var(--border);border-radius:16px;
+    padding:22px 22px 20px;margin-bottom:20px;
+  }
+  .pipeline h2{font-size:0.92rem;margin:0 0 16px;font-weight:600;}
+  .stages{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;}
+  .stage{
+    flex:1;min-width:130px;background:var(--bg-panel-alt);border:1px solid var(--border);
+    border-radius:11px;padding:12px 13px;
+  }
+  .stage .n{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--text-dim);margin-bottom:6px;}
+  .stage .t{font-size:0.8rem;font-weight:600;margin-bottom:4px;}
+  .stage .d{font-size:0.72rem;color:var(--text-muted);line-height:1.4;}
+  .arrow{display:flex;align-items:center;color:var(--text-dim);font-size:1rem;flex:none;}
+
+  /* ---------- footer note ---------- */
+  .note{
+    background:var(--bg-panel-alt);border:1px dashed var(--border);border-radius:14px;
+    padding:16px 18px;font-size:0.8rem;color:var(--text-muted);line-height:1.65;
+  }
+  .note b{color:var(--text-primary);}
+  .note code{font-family:'IBM Plex Mono',monospace;background:rgba(255,255,255,0.04);padding:1px 6px;border-radius:4px;font-size:0.78rem;color:var(--cyan);}
+
+  @media (max-width:900px){
+    .cols{grid-template-columns:1fr;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4z" stroke="#0A121F" stroke-width="1.8" fill="rgba(10,18,31,0.15)"/><path d="M9 12l2 2 4-4" stroke="#0A121F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <h1>Early Warning Console</h1>
+        <p class="subtitle">Forecasts attack probability in the next traffic window from NetFlow/Zeek-style features — prediction, not just detection.</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="pill"><span class="dot"></span>PROTOTYPE · SYNTHETIC TRAFFIC</div>
+      <div class="meta-line mono" id="lastUpdated">—</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="hero-title">Fused risk score over time</div>
+        <div class="hero-sub" id="heroSub">10-day synthetic traffic window · 5-minute buckets</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="legend-toggles">
+          <div class="toggle active" data-series="final" style="--swatch:#2FD4C0;"><span class="sw"></span>Fused risk</div>
+          <div class="toggle" data-series="statistical" style="--swatch:#F2A93B;"><span class="sw"></span>Statistical (EWMA/CUSUM)</div>
+          <div class="toggle" data-series="ml" style="--swatch:#5B8DEF;"><span class="sw"></span>XGBoost forecaster</div>
+        </div>
+        <button class="reset-btn" id="resetZoom">RESET VIEW</button>
+      </div>
+    </div>
+    <div class="chart-box"><canvas id="heroChart"></canvas></div>
+  </section>
+
+  <section class="metrics" id="metricsRow"></section>
+
+  <section class="cols">
+    <div class="panel">
+      <h2>Signal drivers</h2>
+      <p class="p-sub">What the forecaster weighs most when scoring a window</p>
+      <div id="featList"></div>
+
+      <h2 style="margin-top:22px;">Statistical vs learned signal</h2>
+      <p class="p-sub" id="decompSub">Click an incident to inspect its buildup phase</p>
+      <div class="decomp-box"><canvas id="decompChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h2>Incident log</h2>
+      <p class="p-sub">Every embedded attack, in order, with warning lead time</p>
+      <div class="incident-list" id="incidentList"></div>
+    </div>
+  </section>
+
+  <section class="pipeline">
+    <h2>Pipeline</h2>
+    <div class="stages" id="stages"></div>
+  </section>
+
+  <div class="note">
+    <b>How to read this prototype.</b> Traffic is <b>synthetic</b> — generated to mimic CICIDS2017-style attack
+    signatures (port-scan/DDoS, credential stuffing, exfiltration), each with a recon "buildup" phase before onset,
+    since this sandbox can't reach the academic hosts for the real CICIDS2017 / CSE-CIC-IDS2018 / ToN_IoT datasets.
+    The pipeline itself is real: <code>generate_data.py</code> → <code>feature_engineering.py</code> (rolling
+    stats + EWMA/CUSUM drift) → <code>pipeline.py</code> (XGBoost forecaster trained on a time-ordered
+    70/30 split, fused with the statistical signal, thresholded, lead time measured against true onset). Swap in
+    real flow data by replacing <code>generate_data.py</code>'s output — the schema is unchanged. Metrics above are
+    illustrative of the method on this synthetic set, not a production accuracy claim.
+  </div>
+
+</div>
+
+<script>
+const RESULTS = __RESULTS_JSON__;
+
+const T = RESULTS.timeline;
+const N = T.t.length;
+const idx = Array.from({length:N}, (_,i)=>i);
+
+function fmtTime(i){
+  const s = T.t[i]; // "YYYY-MM-DDTHH:MM"
+  const [d,hm] = s.split('T');
+  return d.slice(5)+' '+hm;
+}
+
+document.getElementById('lastUpdated').textContent = 'window '+ (N-1) +' / '+ fmtTime(N-1);
+
+// ---------------- metric cards ----------------
+const m = RESULTS.metrics;
+const metricsHtml = `
+  <div class="metric-card">
+    <div class="metric-label">Forecast AUC</div>
+    <div class="metric-value m-cyan">${m.auc !== null ? m.auc.toFixed(3) : '—'}</div>
+    <div class="metric-foot">held-out 30% of windows</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Avg lead time</div>
+    <div class="metric-value m-blue">${m.avg_lead_time_min}<span class="unit">min</span></div>
+    <div class="metric-foot">warning before onset</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Early-detected</div>
+    <div class="metric-value m-violet">${m.incidents_detected_early}<span class="unit">/ ${m.incidents_total}</span></div>
+    <div class="metric-foot">incidents flagged pre-onset</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Precision / Recall</div>
+    <div class="metric-value m-amber">${m.precision.toFixed(2)}<span class="unit">/ ${m.recall.toFixed(2)}</span></div>
+    <div class="metric-foot">on future-window label</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">False alarm rate</div>
+    <div class="metric-value ${m.false_alarm_rate===0?'m-cyan':'m-red'}">${(m.false_alarm_rate*100).toFixed(2)}<span class="unit">%</span></div>
+    <div class="metric-foot">${m.false_alarms} alerts on benign windows</div>
+  </div>
+`;
+document.getElementById('metricsRow').innerHTML = metricsHtml;
+
+// ---------------- feature importance ----------------
+const FEATURE_LABELS = {
+  stat_composite: 'statistical composite',
+  stat_ewma: 'EWMA baseline',
+  stat_cusum: 'CUSUM drift',
+  port_entropy: 'port entropy',
+  syn_ack_ratio: 'SYN/ACK ratio',
+  flow_rate: 'flow rate',
+  byte_rate: 'byte rate',
+  unique_ips: 'unique IPs',
+  unique_ports: 'unique ports',
+  inter_arrival_std: 'inter-arrival std',
+};
+function niceFeatureLabel(f){
+  for(const base of Object.keys(FEATURE_LABELS)){
+    if(f === base) return FEATURE_LABELS[base];
+    if(f === base+'_roll_mean') return FEATURE_LABELS[base]+' (avg)';
+    if(f === base+'_roll_std') return FEATURE_LABELS[base]+' (std)';
+    if(f === base+'_delta') return FEATURE_LABELS[base]+' (Δ)';
+  }
+  return f;
+}
+
+const featMax = Math.max(...RESULTS.feature_importance.map(f=>f.importance));
+const featHtml = RESULTS.feature_importance.map(f=>{
+  const width = (100*f.importance/featMax).toFixed(1);
+  return `<div class="feat-row">
+    <div class="feat-name">${niceFeatureLabel(f.feature)}</div>
+    <div class="feat-bar-bg"><div class="feat-bar" style="width:${width}%"></div></div>
+    <div class="feat-val">${f.importance.toFixed(3)}</div>
+  </div>`;
+}).join('');
+document.getElementById('featList').innerHTML = featHtml;
+
+// ---------------- incident list ----------------
+const incListHtml = RESULTS.incidents.map((inc,i)=>{
+  const kindLabel = inc.kind.replace('_',' ');
+  return `<div class="incident-row" data-inc="${i}">
+    <div class="inc-idx">${String(inc.incident_id).padStart(2,'0')}</div>
+    <div class="inc-main">
+      <div class="inc-kind">${kindLabel}</div>
+      <div class="inc-time">onset @ window ${inc.onset_start} · ${fmtTime(inc.onset_start)}</div>
+      <div class="badge-kind badge-${inc.kind}">${inc.detected_early ? 'early warning' : 'missed'}</div>
+    </div>
+    <div class="inc-lead">
+      <div class="val">${inc.detected_early ? '+' + inc.lead_time_min : '—'}${inc.detected_early ? '<span style=\"font-size:0.7rem;color:var(--text-dim);\"> min</span>' : ''}</div>
+      <div class="lbl">lead time</div>
+    </div>
+  </div>`;
+}).join('');
+document.getElementById('incidentList').innerHTML = incListHtml;
+
+// ---------------- pipeline stages ----------------
+const stageDefs = [
+  {n:'01', t:'NetFlow / Zeek', d:'Raw flow logs, 5-min windows'},
+  {n:'02', t:'Feature panel', d:'Rolling mean/std, deltas, entropy'},
+  {n:'03', t:'Statistical signal', d:'EWMA baseline + CUSUM drift'},
+  {n:'04', t:'XGBoost forecaster', d:'Predicts attack in next 3 windows'},
+  {n:'05', t:'Fusion', d:'0.35 × statistical + 0.65 × learned'},
+  {n:'06', t:'Threshold + alert', d:'Risk ≥ 0.5 → SOC early warning'},
+];
+document.getElementById('stages').innerHTML = stageDefs.map((s,i)=>
+  `<div class="stage"><div class="n">${s.n}</div><div class="t">${s.t}</div><div class="d">${s.d}</div></div>`
+  + (i<stageDefs.length-1 ? '<div class="arrow">→</div>' : '')
+).join('');
+
+// ---------------- lightweight self-contained canvas line chart ----------------
+// (no external chart library -- keeps this dashboard a single offline-safe file)
+
+function makeChart(canvas, {padding, yMin=0, yMax=1}) {
+  const ctx = canvas.getContext('2d');
+  const state = { xMin:0, xMax:1, series:[], bands:[], yMin, yMax, padding };
+
+  function layoutRect(){
+    const rect = canvas.getBoundingClientRect();
+    return {w: rect.width, h: rect.height};
+  }
+
+  function resizeForDPR(){
+    const dpr = window.devicePixelRatio || 1;
+    const {w,h} = layoutRect();
+    canvas.width = Math.max(1, w*dpr);
+    canvas.height = Math.max(1, h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w,h};
+  }
+
+  function xToPx(x, w){
+    const {padding} = state;
+    const plotW = w - padding.l - padding.r;
+    return padding.l + (x - state.xMin) / (state.xMax - state.xMin || 1) * plotW;
+  }
+  function yToPx(y, h){
+    const {padding} = state;
+    const plotH = h - padding.t - padding.b;
+    return padding.t + (1 - (y - state.yMin) / (state.yMax - state.yMin || 1)) * plotH;
+  }
+
+  function render(){
+    const {w,h} = resizeForDPR();
+    ctx.clearRect(0,0,w,h);
+    const {padding} = state;
+
+    // bands (incident buildup shading)
+    state.bands.forEach(b=>{
+      const x0 = xToPx(b.x0, w), x1 = xToPx(b.x1, w);
+      if (x1 < padding.l || x0 > w - padding.r) return;
+      ctx.fillStyle = b.color || 'rgba(239,83,80,0.07)';
+      ctx.fillRect(Math.max(x0,padding.l), padding.t, Math.max(1,x1-Math.max(x0,padding.l)), h-padding.t-padding.b);
+    });
+
+    // horizontal grid + y labels
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillStyle = '#4E6079';
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const ySteps = 4;
+    for(let i=0;i<=ySteps;i++){
+      const yv = state.yMin + (state.yMax-state.yMin)*i/ySteps;
+      const py = yToPx(yv, h);
+      ctx.beginPath(); ctx.moveTo(padding.l, py); ctx.lineTo(w-padding.r, py); ctx.stroke();
+      if(state.showYLabels !== false) ctx.fillText(yv.toFixed(2), padding.l-8, py);
+    }
+
+    // threshold line
+    if(state.threshold !== undefined){
+      const py = yToPx(state.threshold, h);
+      ctx.save();
+      ctx.setLineDash([4,4]);
+      ctx.strokeStyle = 'rgba(242,169,59,0.55)';
+      ctx.beginPath(); ctx.moveTo(padding.l, py); ctx.lineTo(w-padding.r, py); ctx.stroke();
+      ctx.restore();
+    }
+
+    // x labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const xSteps = 6;
+    for(let i=0;i<=xSteps;i++){
+      const xv = state.xMin + (state.xMax-state.xMin)*i/xSteps;
+      const px = xToPx(xv, w);
+      if(state.xLabelFn) ctx.fillText(state.xLabelFn(Math.round(xv)), px, h-padding.b+8);
+    }
+
+    // series lines
+    state.series.forEach(s=>{
+      const data = s.data;
+      const i0 = Math.max(0, Math.floor(state.xMin));
+      const i1 = Math.min(data.length-1, Math.ceil(state.xMax));
+      if(i1 <= i0) return;
+
+      if(s.fill){
+        ctx.beginPath();
+        ctx.moveTo(xToPx(i0,w), yToPx(state.yMin,h));
+        for(let i=i0;i<=i1;i++) ctx.lineTo(xToPx(i,w), yToPx(data[i],h));
+        ctx.lineTo(xToPx(i1,w), yToPx(state.yMin,h));
+        ctx.closePath();
+        ctx.fillStyle = s.color + '20';
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.lineWidth = s.width || 1.4;
+      ctx.strokeStyle = s.color;
+      ctx.lineJoin = 'round';
+      let started = false;
+      // decimate for perf when zoomed out over many points
+      const span = i1-i0;
+      const step = Math.max(1, Math.floor(span / (w*1.4)));
+      for(let i=i0;i<=i1;i+=step){
+        const px = xToPx(i,w), py = yToPx(data[i],h);
+        if(!started){ ctx.moveTo(px,py); started=true; } else { ctx.lineTo(px,py); }
+      }
+      ctx.stroke();
+    });
+
+    state._w = w; state._h = h;
+  }
+
+  function setRange(xMin,xMax){ state.xMin=xMin; state.xMax=xMax; }
+
+  return { render, setRange, state, xToPx, yToPx, canvas };
+}
+
+// ---------------- hero chart ----------------
+const activeSeries = {final:true, statistical:false, ml:false};
+const seriesMeta = {
+  final: {label:'Fused risk', color:'#2FD4C0', data: T.final_risk, fill:true},
+  statistical: {label:'Statistical', color:'#F2A93B', data: T.statistical_risk},
+  ml: {label:'XGBoost', color:'#5B8DEF', data: T.ml_risk},
+};
+
+const hero = makeChart(document.getElementById('heroChart'), {
+  padding:{l:44,r:14,t:12,b:24}, yMin:0, yMax:1
+});
+hero.state.xLabelFn = fmtTime;
+hero.state.threshold = RESULTS.config.alert_threshold;
+hero.state.bands = RESULTS.incidents.map(inc=>({
+  x0: inc.buildup_start ?? Math.max(0,inc.onset_start-6),
+  x1: inc.onset_end ?? inc.onset_start,
+}));
+hero.setRange(0, N-1);
+
+function refreshHeroSeries(){
+  hero.state.series = Object.keys(activeSeries).filter(k=>activeSeries[k]).map(k=>({
+    data: seriesMeta[k].data, color: seriesMeta[k].color, fill: !!seriesMeta[k].fill
+  }));
+  hero.render();
+}
+refreshHeroSeries();
+
+document.querySelectorAll('.legend-toggles .toggle').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const key = el.dataset.series;
+    const next = !activeSeries[key];
+    if(!next && Object.values(activeSeries).filter(Boolean).length===1 && activeSeries[key]) return; // keep >=1 active
+    activeSeries[key] = next;
+    el.classList.toggle('active', next);
+    refreshHeroSeries();
+  });
+});
+
+document.getElementById('resetZoom').addEventListener('click', ()=>{
+  hero.setRange(0, N-1);
+  hero.render();
+  document.querySelectorAll('.incident-row').forEach(r=>r.classList.remove('focused'));
+  document.getElementById('decompSub').textContent = 'Click an incident to inspect its buildup phase';
+  decomp.state.series = [];
+  decomp.render();
+});
+
+// hover tooltip for hero chart
+const tooltip = document.createElement('div');
+tooltip.style.cssText = 'position:fixed;pointer-events:none;background:#0C1522;border:1px solid #1E2C40;'+
+  'border-radius:8px;padding:8px 10px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:#B9C8DA;'+
+  'z-index:1000;display:none;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+document.body.appendChild(tooltip);
+
+document.getElementById('heroChart').addEventListener('mousemove', (e)=>{
+  const rect = e.target.getBoundingClientRect();
+  const w = rect.width;
+  const {padding, xMin, xMax} = hero.state;
+  const plotW = w - padding.l - padding.r;
+  const relX = e.clientX - rect.left - padding.l;
+  if(relX<0 || relX>plotW){ tooltip.style.display='none'; return; }
+  const dataX = Math.round(xMin + (relX/plotW)*(xMax-xMin));
+  const i = Math.max(0, Math.min(N-1, dataX));
+  const lines = [`<b style="color:#E8EEF6">${fmtTime(i)}</b>`];
+  Object.keys(activeSeries).filter(k=>activeSeries[k]).forEach(k=>{
+    lines.push(`<span style="color:${seriesMeta[k].color}">${seriesMeta[k].label}: ${seriesMeta[k].data[i].toFixed(3)}</span>`);
+  });
+  tooltip.innerHTML = lines.join('<br>');
+  tooltip.style.left = (e.clientX+14)+'px';
+  tooltip.style.top = (e.clientY+14)+'px';
+  tooltip.style.display = 'block';
+});
+document.getElementById('heroChart').addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; });
+
+// ---------------- decomposition mini chart ----------------
+const decomp = makeChart(document.getElementById('decompChart'), {
+  padding:{l:36,r:10,t:8,b:20}, yMin:0, yMax:1
+});
+decomp.state.xLabelFn = fmtTime;
+decomp.state.series = [];
+decomp.render();
+
+document.querySelectorAll('.incident-row').forEach(row=>{
+  row.addEventListener('click', ()=>{
+    document.querySelectorAll('.incident-row').forEach(r=>r.classList.remove('focused'));
+    row.classList.add('focused');
+    const i = parseInt(row.dataset.inc,10);
+    const inc = RESULTS.incidents[i];
+    const b0 = Math.max(0, (inc.buildup_start ?? inc.onset_start-6) - 15);
+    const b1 = Math.min(N-1, (inc.onset_end ?? inc.onset_start) + 15);
+
+    hero.setRange(b0,b1);
+    hero.render();
+
+    decomp.setRange(b0,b1);
+    decomp.state.series = [
+      {data:T.statistical_risk, color:'#F2A93B'},
+      {data:T.ml_risk, color:'#5B8DEF'},
+    ];
+    decomp.render();
+
+    document.getElementById('decompSub').textContent =
+      `Incident ${inc.incident_id} · ${inc.kind.replace('_',' ')} · onset window ${inc.onset_start}`;
+  });
+});
+
+window.addEventListener('resize', ()=>{ hero.render(); decomp.render(); });
+</script>
+</body>
+</html>
