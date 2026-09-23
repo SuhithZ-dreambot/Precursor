@@ -1,6 +1,6 @@
 # SPAR-Net Prototype — AI-Based Network Attack Forecasting & Early Warning
 https://suhithZ.github.io/Precursor/dashboard.html
-
+🔗 [Live Dashboard](https://suhithz.github.io/Precursor/dashboard.html)
 Working prototype for SIH: **"Prediction, not just detection."** Forecasts the
 probability of an attack in the *next* traffic window, instead of only flagging
 malicious traffic once it has already started.
